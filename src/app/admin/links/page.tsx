@@ -15,19 +15,25 @@ import { LinkActions } from "./actions";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 
+type StatusFilter = "ALL" | "ACTIVE" | "USED" | "DISABLED" | "EXPIRED";
+
 function formatDate(input: Date | null) {
   if (!input) return "—";
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(input);
 }
 
-export default async function LinksPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function LinksPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: StatusFilter }> }) {
   const session = await requireAdminSession();
   const orgId = session.user.orgId ?? "default-org";
-  const { q } = await searchParams;
+  const { q, status } = await searchParams;
   const term = q?.toLowerCase() || "";
+  const statusFilter: StatusFilter = status && ["ACTIVE", "USED", "DISABLED", "EXPIRED"].includes(status as StatusFilter)
+    ? (status as StatusFilter)
+    : "ALL";
   const links = await prisma.inviteLink.findMany({
     where: {
       orgId,
+      status: statusFilter === "ALL" ? undefined : statusFilter,
       recipient: term
         ? {
             email: {
@@ -41,8 +47,11 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
       recipient: true,
       campaign: true,
     },
-    orderBy: { createdAt: "desc" },
-    take: 30,
+    orderBy: [
+      { createdAt: "desc" },
+      { usedAt: "desc" },
+    ],
+    take: 200,
   });
 
   return (
@@ -60,6 +69,13 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
       <form method="GET" className="flex items-center gap-3">
         <Input name="q" placeholder="Search by email" defaultValue={term} className="w-64" />
         <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white">Search</button>
+        <select name="status" defaultValue={statusFilter} className="h-10 rounded-md border border-slate-200 px-3 text-sm">
+          <option value="ALL">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="USED">Used</option>
+          <option value="DISABLED">Disabled</option>
+          <option value="EXPIRED">Expired</option>
+        </select>
       </form>
 
       <Card>
@@ -76,6 +92,7 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
                 <TableHead>Campaign</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Used</TableHead>
+                <TableHead>Usage</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -94,6 +111,7 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
                   <TableCell>{link.campaign.name}</TableCell>
                   <TableCell>{formatDate(link.createdAt)}</TableCell>
                   <TableCell>{formatDate(link.usedAt)}</TableCell>
+                  <TableCell className="text-xs text-slate-700">{link.usedAt ? "Used" : "Not used yet"}</TableCell>
                   <TableCell>
                     <LinkActions id={link.id} status={link.status} />
                   </TableCell>

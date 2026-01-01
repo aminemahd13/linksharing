@@ -13,6 +13,7 @@ import { SubmitButton } from "@/app/admin/groups/submit-button";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { Textarea } from "@/components/ui/textarea";
+import { Button as UIButton } from "@/components/ui/button";
 
 export default async function CampaignsPage() {
   const session = await requireAdminSession();
@@ -109,6 +110,30 @@ export default async function CampaignsPage() {
                   <CardDescription>{campaign.group?.name || "Group"}</CardDescription>
                 </div>
                 <Badge variant="secondary">{campaign.status}</Badge>
+                <form
+                  action={async () => {
+                    "use server";
+                    const session = await requireAdminSession();
+                    const orgId = session.user.orgId ?? "default-org";
+                    await prisma.$transaction(async (tx) => {
+                      await tx.inviteLink.deleteMany({ where: { campaignId: campaign.id, orgId } });
+                      await tx.campaign.delete({ where: { id: campaign.id, orgId } });
+                    });
+                    await logAudit({
+                      orgId,
+                      adminId: session.user.id,
+                      action: "CAMPAIGN_DELETED",
+                      entityType: "campaigns",
+                      entityId: campaign.id,
+                      meta: { name: campaign.name },
+                    });
+                    revalidatePath("/admin/campaigns");
+                  }}
+                >
+                  <UIButton type="submit" variant="destructive" size="sm">
+                    Delete
+                  </UIButton>
+                </form>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-700">
                 <p>{sent} links • {used} used</p>

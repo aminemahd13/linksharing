@@ -55,6 +55,9 @@ export function LinkActions({ id, status }: { id: string; status: string }) {
       <Button size="sm" variant="default" disabled={loading === "regenerate"} onClick={() => handle("regenerate")}>
         Regenerate & Copy
       </Button>
+      <Button size="sm" variant="destructive" disabled={loading === "delete"} onClick={() => handle("delete")}>
+        Delete
+      </Button>
     </div>
   );
 }

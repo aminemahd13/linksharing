@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Suspense } from "react";
 import Link from "next/link";
 import { SubmitButton } from "./submit-button";
+import { revalidatePath } from "next/cache";
 
 export default async function GroupsPage() {
   const session = await requireAdminSession();
@@ -55,6 +56,37 @@ export default async function GroupsPage() {
             </CardHeader>
             <CardContent className="text-sm text-slate-600">
               <p>Created {group.createdAt.toDateString()}</p>
+              <form
+                action={async () => {
+                  "use server";
+                  const session = await requireAdminSession();
+                  const orgId = session.user.orgId ?? "default-org";
+                  await prisma.$transaction(async (tx) => {
+                    const campaigns = await tx.campaign.findMany({ where: { groupId: group.id, orgId }, select: { id: true } });
+                    const campaignIds = campaigns.map((c) => c.id);
+                    if (campaignIds.length) {
+                      await tx.inviteLink.deleteMany({ where: { campaignId: { in: campaignIds }, orgId } });
+                      await tx.campaign.deleteMany({ where: { id: { in: campaignIds }, orgId } });
+                    }
+                    await tx.inviteRotationHistory.deleteMany({ where: { groupId: group.id } });
+                    await tx.whatsAppGroup.delete({ where: { id: group.id, orgId } });
+                  });
+                  await logAudit({
+                    orgId,
+                    adminId: session.user.id,
+                    action: "GROUP_DELETED",
+                    entityType: "whatsapp_groups",
+                    entityId: group.id,
+                    meta: { name: group.name },
+                  });
+                  revalidatePath("/admin/groups");
+                }}
+                className="mt-3"
+              >
+                <Button type="submit" size="sm" variant="destructive">
+                  Delete group & campaigns
+                </Button>
+              </form>
             </CardContent>
           </Card>
         ))}
