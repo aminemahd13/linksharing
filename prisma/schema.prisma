@@ -57,6 +57,7 @@ model Admin {
   auditLogs    AuditLog[]
   disabledLinks InviteLink[] @relation("DisabledByAdmin")
   rotationEvents InviteRotationHistory[]
+  campaignAccess AdminCampaignAccess[]
 }
 
 model WhatsAppGroup {
@@ -92,6 +93,7 @@ model Campaign {
   status    CampaignStatus @default(DRAFT)
   createdAt DateTime       @default(now())
   inviteLinks InviteLink[]
+  adminAccess AdminCampaignAccess[]
 }
 
 model Recipient {
@@ -128,6 +130,17 @@ model InviteLink {
   disabledByAdmin   Admin?     @relation("DisabledByAdmin", fields: [disabledByAdminId], references: [id])
 
   @@unique([campaignId, recipientId])
+}
+
+model AdminCampaignAccess {
+  id         String   @id @default(cuid())
+  adminId    String
+  campaignId String
+  admin      Admin    @relation(fields: [adminId], references: [id])
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([adminId, campaignId])
 }
 
 model AuditLog {

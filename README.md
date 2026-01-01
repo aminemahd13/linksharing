@@ -15,35 +15,35 @@ cp .env.example .env
 ```
 Default seed admin: `admin@example.com` / `SEED_ADMIN_PASSWORD` (default `ChangeMe123!`).
 
-### Run with Docker (recommended for local)
+### Run with Docker (recommended)
 ```bash
-# start db and app in dev mode
+# 1) start db
 docker compose --project-name linksharing up -d linksharing-db
-docker compose --project-name linksharing run --rm linksharing-app npm run prisma:migrate -- --name init
-docker compose --project-name linksharing run --rm linksharing-app npm run prisma:seed
-docker compose --project-name linksharing up -d linksharing-app
-# dev container runs: npm install && npm run prisma:generate && npm run prisma:seed && npm run dev (see compose command)
-docker compose --project-name linksharing exec linksharing-app node scripts/reset-admin.js
-```
 
-to re-run the docker containers:
-```bash
-docker compose --project-name linksharing down
-docker compose --project-name linksharing up -d linksharing-db
+# 2) install deps + migrate + generate + seed (one-shot)
+docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm install"
+docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npx prisma migrate dev --name admin-campaign-access"
+docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm run prisma:generate"
+docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm run prisma:seed"
 docker compose --project-name linksharing up -d linksharing-app
-docker compose --project-name linksharing run --rm linksharing-app npx prisma migrate dev --name add-token-raw
-docker compose --project-name linksharing run --rm linksharing-app npm run prisma:generate
-docker compose --project-name linksharing exec linksharing-app npm install
+
+# 3) start app
+docker compose --project-name linksharing up -d linksharing-app
+
+# optional: reset admin password
+docker compose --project-name linksharing exec linksharing-app node scripts/reset-admin.js
 ```
 - Postgres container: `linksharing-db` (exposed on host 5445, internal 5432)
 - App container: `linksharing-app-dev` on port 3000
 - If running the app outside Docker, point `DATABASE_URL` to `postgresql://linksharing:linksharing@localhost:5445/linksharing` or your own DB URL.
 
+
+
 ### Run locally (without Docker)
 ```bash
 npm install
-npm run prisma:generate
 npm run prisma:migrate -- --name init
+npm run prisma:generate
 npm run prisma:seed
 npm run dev
 ```

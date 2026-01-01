@@ -17,22 +17,41 @@ import Link from "next/link";
 
 type StatusFilter = "ALL" | "ACTIVE" | "USED" | "DISABLED" | "EXPIRED";
 
+async function getAllowedCampaignIds(adminId: string, role: string): Promise<string[] | null> {
+  if (role === "OWNER") return null; // null -> no restriction
+  const access = await prisma.adminCampaignAccess.findMany({ where: { adminId }, select: { campaignId: true } });
+  return access.map((a) => a.campaignId);
+}
+
 function formatDate(input: Date | null) {
   if (!input) return "—";
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(input);
 }
 
-export default async function LinksPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: StatusFilter }> }) {
+export default async function LinksPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: StatusFilter; campaignId?: string }> }) {
   const session = await requireAdminSession();
   const orgId = session.user.orgId ?? "default-org";
-  const { q, status } = await searchParams;
+  const { q, status, campaignId } = await searchParams;
   const term = q?.toLowerCase() || "";
   const statusFilter: StatusFilter = status && ["ACTIVE", "USED", "DISABLED", "EXPIRED"].includes(status as StatusFilter)
     ? (status as StatusFilter)
     : "ALL";
+  const allowedCampaignIds = await getAllowedCampaignIds(session.user.id, session.user.role ?? "");
+  const campaignFilter = campaignId || undefined;
+
+  let scopedCampaignIds: string[] | undefined = allowedCampaignIds ?? undefined;
+  if (campaignFilter) {
+    scopedCampaignIds = scopedCampaignIds ? scopedCampaignIds.filter((id) => id === campaignFilter) : [campaignFilter];
+  }
+
+  const campaigns = await prisma.campaign.findMany({
+    where: { orgId, ...(allowedCampaignIds ? { id: { in: allowedCampaignIds } } : {}) },
+    orderBy: { createdAt: "desc" },
+  });
   const links = await prisma.inviteLink.findMany({
     where: {
       orgId,
+      campaignId: scopedCampaignIds ? { in: scopedCampaignIds } : undefined,
       status: statusFilter === "ALL" ? undefined : statusFilter,
       recipient: term
         ? {
@@ -75,6 +94,14 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
           <option value="USED">Used</option>
           <option value="DISABLED">Disabled</option>
           <option value="EXPIRED">Expired</option>
+        </select>
+        <select name="campaignId" defaultValue={campaignFilter || ""} className="h-10 rounded-md border border-slate-200 px-3 text-sm">
+          <option value="">All campaigns</option>
+          {campaigns.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
       </form>
 

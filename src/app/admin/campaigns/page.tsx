@@ -14,16 +14,22 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { Textarea } from "@/components/ui/textarea";
 import { Button as UIButton } from "@/components/ui/button";
+async function getAllowedCampaignIds(adminId: string, role: string) {
+  if (role === "OWNER") return null;
+  const access = await prisma.adminCampaignAccess.findMany({ where: { adminId }, select: { campaignId: true } });
+  return access.map((a) => a.campaignId);
+}
 
 export default async function CampaignsPage() {
   const session = await requireAdminSession();
   const orgId = session.user.orgId ?? "default-org";
+  const allowedCampaignIds = await getAllowedCampaignIds(session.user.id, session.user.role ?? "");
   const groups = await prisma.whatsAppGroup.findMany({
     where: { orgId },
     orderBy: { createdAt: "desc" },
   });
   const campaigns = await prisma.campaign.findMany({
-    where: { orgId },
+    where: { orgId, ...(allowedCampaignIds ? { id: { in: allowedCampaignIds } } : {}) },
     include: { group: true, inviteLinks: true },
     orderBy: { createdAt: "desc" },
   });
@@ -52,19 +58,22 @@ export default async function CampaignsPage() {
             const orgId = session.user.orgId ?? "default-org";
             const name = String(formData.get("name"));
             const groupId = String(formData.get("groupId"));
-            await prisma.campaign.create({
+            const campaign = await prisma.campaign.create({
               data: {
                 name,
                 groupId,
                 orgId,
               },
             });
+            if (session.user.role !== "OWNER") {
+              await prisma.adminCampaignAccess.create({ data: { adminId: session.user.id, campaignId: campaign.id } });
+            }
             await logAudit({
               orgId: session.user.orgId,
               adminId: session.user.id,
               action: "CAMPAIGN_CREATED",
               entityType: "campaigns",
-              meta: { name },
+              meta: { name, groupId },
             });
             revalidatePath("/admin/campaigns");
           }}

@@ -83,6 +83,11 @@ export default async function AdminDashboardPage() {
             <h1 className="text-3xl font-semibold text-slate-900">Admin dashboard</h1>
           </div>
           <div className="flex gap-3">
+            {session.user.role === "OWNER" && (
+              <Button asChild variant="outline">
+                <Link href="/admin/admins">Admin control panel</Link>
+              </Button>
+            )}
             <Button asChild variant="outline">
               <Link href="/admin/groups">Manage groups</Link>
             </Button>

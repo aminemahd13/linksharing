@@ -21,6 +21,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
+  if (session?.user.orgId && link.campaign.orgId && session.user.orgId !== link.campaign.orgId) {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+  if (session?.user.role !== "OWNER") {
+    const allowed = await prisma.adminCampaignAccess.findFirst({ where: { adminId: session?.user.id, campaignId: link.campaignId } });
+    if (!allowed) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+  }
+
   await prisma.inviteLink.delete({ where: { id } });
 
   await logAudit({
