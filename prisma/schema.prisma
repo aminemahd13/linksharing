@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AdminRole {
+  OWNER
+  ADMIN
+  VIEWER
+}
+
+enum CampaignStatus {
+  DRAFT
+  SENT
+  ARCHIVED
+}
+
+enum InviteLinkStatus {
+  ACTIVE
+  USED
+  DISABLED
+  EXPIRED
+}
+
+model Organization {
+  id          String         @id @default(cuid())
+  name        String
+  admins      Admin[]
+  whatsappGroups WhatsAppGroup[]
+  campaigns   Campaign[]
+  recipients  Recipient[]
+  inviteLinks InviteLink[]
+  auditLogs   AuditLog[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Admin {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String?
+  passwordHash String?
+  role         AdminRole   @default(ADMIN)
+  orgId        String?
+  org          Organization? @relation(fields: [orgId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  auditLogs    AuditLog[]
+  disabledLinks InviteLink[] @relation("DisabledByAdmin")
+  rotationEvents InviteRotationHistory[]
+}
+
+model WhatsAppGroup {
+  id              String      @id @default(cuid())
+  orgId           String?
+  org             Organization? @relation(fields: [orgId], references: [id])
+  name            String
+  whatsappInviteUrl String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  campaigns       Campaign[]
+  rotationHistory InviteRotationHistory[]
+}
+
+model InviteRotationHistory {
+  id        String        @id @default(cuid())
+  groupId   String
+  group     WhatsAppGroup @relation(fields: [groupId], references: [id])
+  oldUrl    String
+  newUrl    String
+  adminId   String?
+  admin     Admin?        @relation(fields: [adminId], references: [id])
+  createdAt DateTime      @default(now())
+}
+
+model Campaign {
+  id        String         @id @default(cuid())
+  orgId     String?
+  org       Organization?  @relation(fields: [orgId], references: [id])
+  groupId   String
+  group     WhatsAppGroup  @relation(fields: [groupId], references: [id])
+  name      String
+  status    CampaignStatus @default(DRAFT)
+  createdAt DateTime       @default(now())
+  inviteLinks InviteLink[]
+}
+
+model Recipient {
+  id        String        @id @default(cuid())
+  orgId     String?
+  org       Organization? @relation(fields: [orgId], references: [id])
+  email     String
+  name      String?
+  tags      String[]
+  createdAt DateTime      @default(now())
+  inviteLinks InviteLink[]
+
+  @@unique([orgId, email])
+}
+
+model InviteLink {
+  id          String          @id @default(cuid())
+  campaignId  String
+  campaign    Campaign        @relation(fields: [campaignId], references: [id])
+  recipientId String
+  recipient   Recipient       @relation(fields: [recipientId], references: [id])
+  orgId       String?
+  org         Organization?   @relation(fields: [orgId], references: [id])
+  tokenHash   String          @unique
+  status      InviteLinkStatus @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  expiresAt   DateTime?
+  usedAt      DateTime?
+  usedIp      String?
+  usedUserAgent String?
+  disabledAt  DateTime?
+  disabledByAdminId String?
+  disabledByAdmin   Admin?     @relation("DisabledByAdmin", fields: [disabledByAdminId], references: [id])
+
+  @@unique([campaignId, recipientId])
+}
+
+model AuditLog {
+  id          String        @id @default(cuid())
+  orgId       String?
+  org         Organization? @relation(fields: [orgId], references: [id])
+  adminId     String?
+  admin       Admin?        @relation(fields: [adminId], references: [id])
+  action      String
+  entityType  String
+  entityId    String?
+  meta        Json?
+  createdAt   DateTime      @default(now())
+
+  @@index([orgId, createdAt])
+}

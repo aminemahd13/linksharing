@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Linksharing — one-time WhatsApp invite links
 
-## Getting Started
+Next.js (App Router) + TypeScript + Tailwind/shadcn/ui + Prisma + NextAuth. Generates single-use WhatsApp invite links, emails them, and gives admins RBAC, audit logs, dashboards, and link controls.
 
-First, run the development server:
+### Prereqs
+- Node 18+
+- Docker (optional; compose recipe included)
 
+### Environment
+Copy and edit envs:
 ```bash
+cp .env.example .env
+# set AUTH_SECRET, TOKEN_PEPPER, RESEND_API_KEY, AUTH_EMAIL_FROM, NEXTAUTH_URL, NEXT_PUBLIC_APP_URL
+# DATABASE_URL defaults to the compose Postgres service; adjust if using an external DB
+```
+Default seed admin: `admin@example.com` / `SEED_ADMIN_PASSWORD` (default `ChangeMe123!`).
+
+### Run with Docker (recommended for local)
+```bash
+# start db and app in dev mode
+docker compose --project-name linksharing up -d linksharing-db
+docker compose --project-name linksharing run --rm linksharing-app npm run prisma:migrate -- --name init
+docker compose --project-name linksharing run --rm linksharing-app npm run prisma:seed
+docker compose --project-name linksharing up -d linksharing-app
+# dev container runs: npm run prisma:generate && npm run prisma:seed && npm run dev (see compose command)
+docker compose --project-name linksharing exec linksharing-app node scripts/reset-admin.js
+```
+- Postgres container: `linksharing-db` (exposed on host 5445, internal 5432)
+- App container: `linksharing-app-dev` on port 3000
+- If running the app outside Docker, point `DATABASE_URL` to `postgresql://linksharing:linksharing@localhost:5445/linksharing` or your own DB URL.
+
+### Run locally (without Docker)
+```bash
+npm install
+npm run prisma:generate
+npm run prisma:migrate -- --name init
+npm run prisma:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Core flows
+- Admin login: /admin/login (NextAuth credentials; roles OWNER/ADMIN/VIEWER)
+- Dashboard: /admin/dashboard (metrics, recent activity)
+- Groups: /admin/groups (store WhatsApp invite URLs)
+- Campaigns: /admin/campaigns (create, upload recipient CSV, send one-time links)
+- Campaigns now also support manual/bulk emails (no CSV) and per-recipient link creation with optional immediate send.
+- Links: /admin/links (filter, deactivate/reactivate, resend, regenerate, manage per-link actions)
+- Public: /l/[token] → one-time consume → redirect to WhatsApp; expired view at /l/[token]/expired
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Data model (Prisma)
+- admins, organizations, whatsapp_groups, invite_rotation_history
+- campaigns (DRAFT/SENT/ARCHIVED)
+- recipients (email, tags)
+- invite_links (SHA-256(token + pepper) stored; status ACTIVE/USED/DISABLED/EXPIRED; audit fields)
+- audit_logs (who did what, when)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Security & behavior
+- Tokens emailed raw; only hashed + peppered token is stored.
+- Consume endpoint is transactional to prevent double-use; simple in-memory rate limit guards abuse.
+- Admin actions write to audit_logs; RBAC enforced in server routes/middleware.
 
-## Learn More
+### Email
+- Uses Resend; set `AUTH_EMAIL_FROM` and `RESEND_API_KEY`.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Useful scripts
+- `npm run prisma:generate` – regen Prisma client
+- `npm run prisma:migrate -- --name <msg>` – apply migrations
+- `npm run prisma:seed` – seed default admin/org
+- `npm run lint` – lint
+- `npm run dev` – start app
