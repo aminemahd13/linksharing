@@ -25,11 +25,12 @@ async function main() {
     create: { id: "default-org", name: "Default Org" },
   });
 
+  const adminEmail = "contact@mathmaroc.org";
   const admin = await prisma.admin.upsert({
-    where: { email: "contact@mathmaroc.org" },
+    where: { orgId_email: { orgId: org.id, email: adminEmail } },
     update: {},
     create: {
-      email: "contact@mathmaroc.org",
+      email: adminEmail,
       name: "Default Admin",
       passwordHash: await bcrypt.hash(password, 10),
       role: "OWNER",
