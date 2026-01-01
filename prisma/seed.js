@@ -26,10 +26,10 @@ async function main() {
   });
 
   const admin = await prisma.admin.upsert({
-    where: { email: "admin@example.com" },
+    where: { email: "contact@mathmaroc.org" },
     update: {},
     create: {
-      email: "admin@example.com",
+      email: "contact@mathmaroc.org",
       name: "Default Admin",
       passwordHash: await bcrypt.hash(password, 10),
       role: "OWNER",

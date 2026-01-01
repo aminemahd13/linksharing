@@ -18,10 +18,10 @@ const { Pool } = require("pg");
   });
   const hash = await bcrypt.hash(password, 10);
   const admin = await prisma.admin.upsert({
-    where: { email: "admin@example.com" },
+    where: { email: "contact@mathmaroc.org" },
     update: { passwordHash: hash, orgId: org.id },
     create: {
-      email: "admin@example.com",
+      email: "contact@mathmaroc.org",
       name: "Default Admin",
       passwordHash: hash,
       role: "OWNER",

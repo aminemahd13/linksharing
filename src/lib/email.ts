@@ -37,7 +37,7 @@ export async function sendInviteEmail(params: {
 }) {
   const { to, name, token, campaignName } = params;
   const url = `${appBaseUrl()}/l/${token}`;
-  const from = process.env.AUTH_EMAIL_FROM || "admin@example.com";
+  const from = process.env.AUTH_EMAIL_FROM || "contact@mathmaroc.org";
   const subject = `Your invite to ${campaignName}`;
   const html = `
     <p>Hello ${name || "there"},</p>

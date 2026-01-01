@@ -13,19 +13,22 @@ cp .env.example .env
 # set AUTH_SECRET, TOKEN_PEPPER, AUTH_EMAIL_FROM, NEXTAUTH_URL, NEXT_PUBLIC_APP_URL
 # DATABASE_URL defaults to the compose Postgres service; adjust if using an external DB
 ```
-Default seed admin: `admin@example.com` / `SEED_ADMIN_PASSWORD` (default `ChangeMe123!`).
+Default seed admin: `contact@mathmaroc.org` / `SEED_ADMIN_PASSWORD` (default `ChangeMe123!`).
 
 ### Run with Docker (recommended)
 ```bash
 # 1) start db
 docker compose --project-name linksharing up -d linksharing-db
 
-# 2) install deps + migrate + generate + seed (one-shot)
+# 2) install deps + migrate + generate + seed (seperate)
 docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm install"
 docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npx prisma migrate dev --name admin-campaign-access"
 docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm run prisma:generate"
 docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm run prisma:seed"
 docker compose --project-name linksharing up -d linksharing-app
+
+# 2) One shot:
+docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm install && npx prisma migrate dev --name admin-campaign-access && npm run prisma:generate && npm run prisma:seed"
 
 # 3) start app
 docker compose --project-name linksharing up -d linksharing-app
