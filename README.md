@@ -20,24 +20,17 @@ Default seed admin: `contact@mathmaroc.org` / `SEED_ADMIN_PASSWORD` (default `Ch
 # 1) start db
 docker compose --project-name linksharing up -d linksharing-db
 
-# 2) install deps + migrate + generate + seed (seperate)
-docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm install"
-docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npx prisma migrate dev --name admin-campaign-access"
-docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm run prisma:generate"
+# 2) seed once (first run only)
 docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm run prisma:seed"
-docker compose --project-name linksharing up -d linksharing-app
 
-# 2) One shot:
-docker compose --project-name linksharing run --rm --entrypoint /bin/sh linksharing-app -c "npm install && npx prisma migrate dev --name admin-campaign-access && npm run prisma:generate && npm run prisma:seed"
-
-# 3) start app
-docker compose --project-name linksharing up -d linksharing-app
+# 3) build and start app (production mode)
+docker compose --project-name linksharing up -d --build linksharing-app
 
 # optional: reset admin password
 docker compose --project-name linksharing exec linksharing-app node scripts/reset-admin.js
 ```
 - Postgres container: `linksharing-db` (exposed on host 5445, internal 5432)
-- App container: `linksharing-app-dev` on port 3000
+- App container: `linksharing-app` on port 3000
 - If running the app outside Docker, point `DATABASE_URL` to `postgresql://linksharing:linksharing@localhost:5445/linksharing` or your own DB URL.
 
 

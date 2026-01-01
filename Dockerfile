@@ -14,8 +14,14 @@ CMD ["npm", "run", "dev"]
 
 FROM deps AS builder
 ENV NODE_ENV=production
+ARG DATABASE_URL=postgresql://linksharing:linksharing@localhost:5432/linksharing
+ARG NEXTAUTH_URL=http://localhost:3000
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+ENV DATABASE_URL=$DATABASE_URL
+ENV NEXTAUTH_URL=$NEXTAUTH_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 COPY . .
-RUN npm run build
+RUN npx prisma generate && npm run build
 
 FROM base AS production
 ENV NODE_ENV=production
