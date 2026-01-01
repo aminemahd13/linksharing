@@ -1,8 +1,8 @@
 import { ConsumeButton } from "./consume-button";
 import { getLinkByToken } from "@/lib/links";
 
-export default async function InviteLanding({ params }: { params: { token: string } }) {
-  const token = params.token;
+export default async function InviteLanding({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   const link = await getLinkByToken(token);
 
   if (!link) {

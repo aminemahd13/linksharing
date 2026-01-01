@@ -30,6 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     where: { id: link.id },
     data: {
       tokenHash,
+      tokenRaw: rawToken,
       status: "ACTIVE",
       orgId: session?.user.orgId,
       disabledAt: null,

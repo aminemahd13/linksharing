@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = (await getServerSession(authOptions as any)) as Session | null;
   try {
     assertAdmin(session);
@@ -26,25 +26,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const rawToken = generateToken();
   const tokenHash = hashToken(rawToken);
 
-  const [, newLink] = await prisma.$transaction([
-    prisma.inviteLink.update({
-      where: { id: link.id },
-      data: {
-        status: "DISABLED",
-        disabledAt: new Date(),
-        disabledByAdminId: session?.user.id,
-      },
-    }),
-    prisma.inviteLink.create({
-      data: {
-        tokenHash,
-        campaignId: link.campaignId,
-        recipientId: link.recipientId,
-        orgId: session?.user.orgId,
-        status: "ACTIVE",
-      },
-    }),
-  ]);
+  const updated = await prisma.inviteLink.update({
+    where: { id: link.id },
+    data: {
+      tokenHash,
+      tokenRaw: rawToken,
+      status: "ACTIVE",
+      orgId: session?.user.orgId,
+      disabledAt: null,
+      disabledByAdminId: null,
+      usedAt: null,
+      usedIp: null,
+      usedUserAgent: null,
+    },
+  });
 
   await sendInviteEmail({
     to: link.recipient.email,
@@ -58,8 +53,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     adminId: session?.user.id,
     action: "LINK_REGENERATED",
     entityType: "invite_links",
-    entityId: newLink.id,
+    entityId: updated.id,
   });
 
-  return NextResponse.json({ id: newLink.id, status: newLink.status });
+  return NextResponse.json({ id: updated.id, status: updated.status, token: rawToken, url: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000"}/l/${rawToken}` });
 }

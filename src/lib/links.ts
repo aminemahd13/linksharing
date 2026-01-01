@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { hashToken } from "@/lib/tokens";
 
 export async function getLinkByToken(token: string) {
+  // Try raw token match first (for robustness if pepper/env changes), fallback to hash.
+  const rawMatch = await prisma.inviteLink.findFirst({
+    where: { tokenRaw: token },
+    include: {
+      recipient: true,
+      campaign: { include: { group: true } },
+    },
+  });
+  if (rawMatch) return rawMatch;
+
   const tokenHash = hashToken(token);
   return prisma.inviteLink.findUnique({
     where: { tokenHash },
@@ -14,19 +24,26 @@ export async function getLinkByToken(token: string) {
 }
 
 export async function consumeLink(token: string, context: { ip?: string; userAgent?: string; adminId?: string }) {
-  const tokenHash = hashToken(token);
-  return prisma.$transaction(async (tx) => {
-    const link = await tx.inviteLink.findUnique({
-      where: { tokenHash },
+  // Try raw token match first to avoid pepper drift breakage.
+  const rawLink = await prisma.inviteLink.findFirst({
+    where: { tokenRaw: token },
+    include: { campaign: { include: { group: true } }, recipient: true },
+  });
+  const link =
+    rawLink ||
+    (await prisma.inviteLink.findUnique({
+      where: { tokenHash: hashToken(token) },
       include: { campaign: { include: { group: true } }, recipient: true },
-    });
-    if (!link) {
-      return { ok: false as const, status: "NOT_FOUND" as const };
-    }
-    if (link.status !== "ACTIVE") {
-      return { ok: false as const, status: link.status };
-    }
+    }));
 
+  if (!link) {
+    return { ok: false as const, status: "NOT_FOUND" as const };
+  }
+  if (link.status !== "ACTIVE") {
+    return { ok: false as const, status: link.status };
+  }
+
+  return prisma.$transaction(async (tx) => {
     const updatedCount = await tx.inviteLink.updateMany({
       where: { id: link.id, status: "ACTIVE" },
       data: {

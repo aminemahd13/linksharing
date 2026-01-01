@@ -116,6 +116,7 @@ model InviteLink {
   orgId       String?
   org         Organization?   @relation(fields: [orgId], references: [id])
   tokenHash   String          @unique
+  tokenRaw    String?
   status      InviteLinkStatus @default(ACTIVE)
   createdAt   DateTime        @default(now())
   expiresAt   DateTime?

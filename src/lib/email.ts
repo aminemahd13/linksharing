@@ -1,14 +1,24 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-let resend: Resend | null = null;
+let smtpTransport: nodemailer.Transporter | null = null;
 
-function getResend(): Resend {
-  if (resend) return resend;
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is not set");
+function getSmtp(): nodemailer.Transporter {
+  if (smtpTransport) return smtpTransport;
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const secure = process.env.SMTP_SECURE === "true";
+  if (!host || !port) {
+    throw new Error("SMTP_HOST/SMTP_PORT not set");
   }
-  resend = new Resend(process.env.RESEND_API_KEY);
-  return resend;
+  smtpTransport = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: user && pass ? { user, pass } : undefined,
+  });
+  return smtpTransport;
 }
 
 function appBaseUrl(): string {
@@ -35,5 +45,5 @@ export async function sendInviteEmail(params: {
     <p><a href="${url}">Join the WhatsApp group</a></p>
     <p>If you did not expect this email, you can ignore it.</p>
   `;
-  await getResend().emails.send({ from, to, subject, html });
+  await getSmtp().sendMail({ from, to, subject, html });
 }

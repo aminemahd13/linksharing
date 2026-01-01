@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { generateToken, hashToken } from "@/lib/tokens";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SubmitButton } from "@/app/admin/groups/submit-button";
 // Importing Link for navigation
@@ -33,6 +34,9 @@ export default async function CampaignsPage() {
           <p className="text-sm text-slate-500">Send and monitor invites</p>
           <h1 className="text-2xl font-semibold text-slate-900">Campaigns</h1>
         </div>
+        <Button asChild variant="outline">
+          <Link href="/admin/dashboard">Back to dashboard</Link>
+        </Button>
       </div>
 
       <Card>
@@ -160,6 +164,7 @@ export default async function CampaignsPage() {
                         where: { campaignId_recipientId: { campaignId: campaign.id, recipientId: recipient.id } },
                         update: {
                           tokenHash,
+                          tokenRaw: token,
                           status: "ACTIVE",
                           orgId,
                           disabledAt: null,
@@ -169,6 +174,7 @@ export default async function CampaignsPage() {
                         },
                         create: {
                           tokenHash,
+                          tokenRaw: token,
                           campaignId: campaign.id,
                           recipientId: recipient.id,
                           orgId,
@@ -217,6 +223,7 @@ export default async function CampaignsPage() {
                         where: { campaignId_recipientId: { campaignId: campaign.id, recipientId: recipient.id } },
                         update: {
                           tokenHash,
+                          tokenRaw: token,
                           status: "ACTIVE",
                           orgId,
                           disabledAt: null,
@@ -226,6 +233,7 @@ export default async function CampaignsPage() {
                         },
                         create: {
                           tokenHash,
+                          tokenRaw: token,
                           campaignId: campaign.id,
                           recipientId: recipient.id,
                           orgId,
@@ -286,6 +294,7 @@ export default async function CampaignsPage() {
                             where: { campaignId_recipientId: { campaignId: campaign.id, recipientId: recipient.id } },
                             update: {
                               tokenHash,
+                              tokenRaw: token,
                               status: "ACTIVE",
                               orgId,
                               disabledAt: null,
@@ -295,6 +304,7 @@ export default async function CampaignsPage() {
                             },
                             create: {
                               tokenHash,
+                              tokenRaw: token,
                               campaignId: campaign.id,
                               recipientId: recipient.id,
                               orgId,

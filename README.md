@@ -10,7 +10,7 @@ Next.js (App Router) + TypeScript + Tailwind/shadcn/ui + Prisma + NextAuth. Gene
 Copy and edit envs:
 ```bash
 cp .env.example .env
-# set AUTH_SECRET, TOKEN_PEPPER, RESEND_API_KEY, AUTH_EMAIL_FROM, NEXTAUTH_URL, NEXT_PUBLIC_APP_URL
+# set AUTH_SECRET, TOKEN_PEPPER, AUTH_EMAIL_FROM, NEXTAUTH_URL, NEXT_PUBLIC_APP_URL
 # DATABASE_URL defaults to the compose Postgres service; adjust if using an external DB
 ```
 Default seed admin: `admin@example.com` / `SEED_ADMIN_PASSWORD` (default `ChangeMe123!`).
@@ -22,8 +22,18 @@ docker compose --project-name linksharing up -d linksharing-db
 docker compose --project-name linksharing run --rm linksharing-app npm run prisma:migrate -- --name init
 docker compose --project-name linksharing run --rm linksharing-app npm run prisma:seed
 docker compose --project-name linksharing up -d linksharing-app
-# dev container runs: npm run prisma:generate && npm run prisma:seed && npm run dev (see compose command)
+# dev container runs: npm install && npm run prisma:generate && npm run prisma:seed && npm run dev (see compose command)
 docker compose --project-name linksharing exec linksharing-app node scripts/reset-admin.js
+```
+
+to re-run the docker containers:
+```bash
+docker compose --project-name linksharing down
+docker compose --project-name linksharing up -d linksharing-db
+docker compose --project-name linksharing up -d linksharing-app
+docker compose --project-name linksharing run --rm linksharing-app npx prisma migrate dev --name add-token-raw
+docker compose --project-name linksharing run --rm linksharing-app npm run prisma:generate
+docker compose --project-name linksharing exec linksharing-app npm install
 ```
 - Postgres container: `linksharing-db` (exposed on host 5445, internal 5432)
 - App container: `linksharing-app-dev` on port 3000
@@ -44,7 +54,7 @@ npm run dev
 - Groups: /admin/groups (store WhatsApp invite URLs)
 - Campaigns: /admin/campaigns (create, upload recipient CSV, send one-time links)
 - Campaigns now also support manual/bulk emails (no CSV) and per-recipient link creation with optional immediate send.
-- Links: /admin/links (filter, deactivate/reactivate, resend, regenerate, manage per-link actions)
+- Links: /admin/links (filter, deactivate/reactivate, resend, regenerate, copy links)
 - Public: /l/[token] → one-time consume → redirect to WhatsApp; expired view at /l/[token]/expired
 
 ### Data model (Prisma)
@@ -60,7 +70,7 @@ npm run dev
 - Admin actions write to audit_logs; RBAC enforced in server routes/middleware.
 
 ### Email
-- Uses Resend; set `AUTH_EMAIL_FROM` and `RESEND_API_KEY`.
+- SMTP only: set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, and `AUTH_EMAIL_FROM` (e.g., noreply@mathmaroc.org).
 
 ### Useful scripts
 - `npm run prisma:generate` – regen Prisma client
