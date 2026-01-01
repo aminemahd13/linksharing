@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: linksharing
       POSTGRES_DB: linksharing
     ports:
-      - "5445:5432"
+      - "127.0.0.1:5445:5432"
     volumes:
       - linksharing-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -26,11 +26,11 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql://linksharing:linksharing@linksharing-db:5432/linksharing
-      NEXTAUTH_URL: http://localhost:3000
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXTAUTH_URL: https://invite.mathmaroc.org
+      NEXT_PUBLIC_APP_URL: https://invite.mathmaroc.org
       NODE_ENV: production
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       linksharing-db:
         condition: service_healthy
