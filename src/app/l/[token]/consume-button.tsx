@@ -20,7 +20,7 @@ export function ConsumeButton({ token }: { token: string }) {
       return;
     }
     const data = await res.json().catch(() => null);
-    setStatus(data?.message || "This link is no longer valid.");
+    setStatus(data?.message || "This link is no longer valid. Please ask your admin for a new invite.");
   }
 
   return (

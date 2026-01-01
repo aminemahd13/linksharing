@@ -38,12 +38,22 @@ export async function sendInviteEmail(params: {
   const { to, name, token, campaignName } = params;
   const url = `${appBaseUrl()}/l/${token}`;
   const from = process.env.AUTH_EMAIL_FROM || "contact@mathmaroc.org";
-  const subject = `Your invite to ${campaignName}`;
+  const subject = `You're invited to ${campaignName} on WhatsApp`;
   const html = `
-    <p>Hello ${name || "there"},</p>
-    <p>You have been invited to join a WhatsApp group. This link is personal and can be used once.</p>
-    <p><a href="${url}">Join the WhatsApp group</a></p>
-    <p>If you did not expect this email, you can ignore it.</p>
+    <div style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.5;">
+      <p style="margin: 0 0 12px;">Hi ${name || "there"},</p>
+      <p style="margin: 0 0 12px;">You're invited to join the <strong>${campaignName}</strong> WhatsApp group. This link is just for you and works once.</p>
+      <p style="margin: 16px 0; text-align: center;">
+        <a href="${url}" style="background: #16a34a; color: #fff; padding: 12px 18px; border-radius: 8px; text-decoration: none; display: inline-block;">Open your invite</a>
+      </p>
+      <p style="margin: 0 0 8px; font-weight: 600;">Before you join:</p>
+      <ul style="padding-left: 18px; margin: 0 0 12px; color: #334155;">
+        <li style="margin-bottom: 6px;">Use this from the device where WhatsApp is installed.</li>
+        <li style="margin-bottom: 6px;">The link is tied to ${to} and expires after the first successful use.</li>
+      </ul>
+      <p style="margin: 0 0 12px;">If the button above does not work, copy and paste this link in your browser: <br /><span style="color: #2563eb; word-break: break-all;">${url}</span></p>
+      <p style="margin: 0; color: #475569;">Didn’t expect this? You can ignore this email and the invite will stay inactive.</p>
+    </div>
   `;
   await getSmtp().sendMail({ from, to, subject, html });
 }
