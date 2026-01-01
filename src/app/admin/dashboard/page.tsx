@@ -4,6 +4,7 @@ import { UsageChart } from "@/components/charts/usage-chart";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/components/admin/logout-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -94,6 +95,7 @@ export default async function AdminDashboardPage() {
             <Button asChild>
               <Link href="/admin/campaigns">New campaign</Link>
             </Button>
+          <LogoutButton />
           </div>
         </div>
 

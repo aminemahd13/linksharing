@@ -46,7 +46,7 @@ model Organization {
 
 model Admin {
   id           String      @id @default(cuid())
-  email        String      @unique
+  email        String
   name         String?
   passwordHash String?
   role         AdminRole   @default(ADMIN)
@@ -58,6 +58,8 @@ model Admin {
   disabledLinks InviteLink[] @relation("DisabledByAdmin")
   rotationEvents InviteRotationHistory[]
   campaignAccess AdminCampaignAccess[]
+
+  @@unique([orgId, email])
 }
 
 model WhatsAppGroup {

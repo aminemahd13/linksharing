@@ -9,6 +9,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { SubmitButton } from "./submit-button";
 import { revalidatePath } from "next/cache";
+import { LogoutButton } from "@/components/admin/logout-button";
 
 export default async function GroupsPage() {
   const session = await requireAdminSession();
@@ -25,9 +26,12 @@ export default async function GroupsPage() {
           <p className="text-sm text-slate-500">Routing invites</p>
           <h1 className="text-2xl font-semibold text-slate-900">WhatsApp groups</h1>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/admin/dashboard">Back to dashboard</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/admin/dashboard">Dashboard</Link>
+          </Button>
+          <LogoutButton />
+        </div>
       </div>
 
       <Card>

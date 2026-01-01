@@ -30,5 +30,7 @@ COPY --from=builder /app/.next ./.next
 COPY package*.json ./
 COPY public ./public
 COPY prisma ./prisma
+COPY prisma.config.ts ./
+RUN npx prisma generate
 EXPOSE 3000
 CMD ["npm", "run", "start"]

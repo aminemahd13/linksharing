@@ -14,6 +14,7 @@ import {
 import { LinkActions } from "./actions";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { LogoutButton } from "@/components/admin/logout-button";
 
 type StatusFilter = "ALL" | "ACTIVE" | "USED" | "DISABLED" | "EXPIRED";
 
@@ -80,9 +81,12 @@ export default async function LinksPage({ searchParams }: { searchParams: Promis
           <p className="text-sm text-slate-500">Link controls</p>
           <h1 className="text-2xl font-semibold text-slate-900">Invite links</h1>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/admin/dashboard">Back to dashboard</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/admin/dashboard">Dashboard</Link>
+          </Button>
+          <LogoutButton />
+        </div>
       </div>
 
       <form method="GET" className="flex items-center gap-3">

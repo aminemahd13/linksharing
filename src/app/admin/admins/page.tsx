@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { hash } from "bcrypt";
+import { LogoutButton } from "@/components/admin/logout-button";
 
 const roles = ["OWNER", "ADMIN", "VIEWER"] as const;
 
@@ -35,7 +36,7 @@ async function createAdmin(formData: FormData) {
   const campaignIds = formData.getAll("campaignIds").map(String);
   const orgId = session.user.orgId ?? "default-org";
 
-  const existing = await prisma.admin.findUnique({ where: { email } });
+  const existing = await prisma.admin.findFirst({ where: { email, orgId } });
   if (existing) {
     throw new Error("Admin with this email already exists");
   }
@@ -161,9 +162,12 @@ export default async function AdminsPage() {
           <p className="text-sm text-slate-500">Super admin controls</p>
           <h1 className="text-2xl font-semibold text-slate-900">Admins</h1>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/admin/dashboard">Back to dashboard</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/admin/dashboard">Dashboard</Link>
+          </Button>
+          <LogoutButton />
+        </div>
       </div>
 
       <Card>

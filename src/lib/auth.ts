@@ -33,7 +33,8 @@ export const authOptions = {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
-        const admin = await prisma.admin.findUnique({ where: { email } });
+        // Emails are unique per org; select the matching admin (default org if unset).
+        const admin = await prisma.admin.findFirst({ where: { email } });
         if (!admin?.passwordHash) return null;
         const isValid = await compare(password, admin.passwordHash);
         if (!isValid) return null;
